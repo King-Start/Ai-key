@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+/*
+** Copyright 2026, Raimondas Rimkus
+**
+** Licensed under the Apache License, Version 2.0 (the "License");
+** you may not use this file except in compliance with the License.
+** You may obtain a copy of the License at
+**
+**     http://www.apache.org/licenses/LICENSE-2.0
+**
+** Unless required by applicable law or agreed to in writing, software
+** distributed under the License is distributed on an "AS IS" BASIS,
+** WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+** See the License for the specific language governing permissions and
+** limitations under the License.
+*/
+-->
+
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    android:title="@string/settings_screen_ai">
+
+    <SwitchPreference
+        android:key="pref_ai_show_toolbar"
+        android:title="@string/ai_settings_show_toolbar"
+        android:defaultValue="true" />
+
+    <Preference
+        android:key="pref_ai_storage_notice"
+        android:summary="@string/ai_settings_storage_notice"
+        android:selectable="false" />
+
+    <PreferenceCategory android:title="@string/ai_settings_header_openai">
+        <EditTextPreference
+            android:key="pref_ai_openai_key"
+            android:title="@string/ai_settings_api_key"
+            android:dialogTitle="@string/ai_settings_api_key"
+            android:dialogMessage="@string/ai_settings_get_openai_key" />
+        <EditTextPreference
+            android:key="pref_ai_openai_model"
+            android:title="@string/ai_settings_model"
+            android:dialogTitle="@string/ai_settings_model" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/ai_settings_header_gemini">
+        <EditTextPreference
+            android:key="pref_ai_gemini_key"
+            android:title="@string/ai_settings_api_key"
+            android:dialogTitle="@string/ai_settings_api_key"
+            android:dialogMessage="@string/ai_settings_get_gemini_key" />
+        <EditTextPreference
+            android:key="pref_ai_gemini_model"
+            android:title="@string/ai_settings_model"
+            android:dialogTitle="@string/ai_settings_model" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/ai_settings_header_deepseek">
+        <EditTextPreference
+            android:key="pref_ai_deepseek_key"
+            android:title="@string/ai_settings_api_key"
+            android:dialogTitle="@string/ai_settings_api_key"
+            android:dialogMessage="@string/ai_settings_get_deepseek_key" />
+        <EditTextPreference
+            android:key="pref_ai_deepseek_model"
+            android:title="@string/ai_settings_model"
+            android:dialogTitle="@string/ai_settings_model" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/ai_settings_header_anthropic">
+        <EditTextPreference
+            android:key="pref_ai_anthropic_key"
+            android:title="@string/ai_settings_api_key"
+            android:dialogTitle="@string/ai_settings_api_key"
+            android:dialogMessage="@string/ai_settings_get_anthropic_key" />
+        <EditTextPreference
+            android:key="pref_ai_anthropic_model"
+            android:title="@string/ai_settings_model"
+            android:dialogTitle="@string/ai_settings_model" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/ai_settings_header_custom">
+        <EditTextPreference
+            android:key="pref_ai_custom_label"
+            android:title="@string/ai_settings_custom_label"
+            android:dialogTitle="@string/ai_settings_custom_label" />
+        <EditTextPreference
+            android:key="pref_ai_custom_endpoint"
+            android:title="@string/ai_settings_custom_endpoint"
+            android:dialogTitle="@string/ai_settings_custom_endpoint"
+            android:dialogMessage="@string/ai_settings_custom_endpoint_hint" />
+        <EditTextPreference
+            android:key="pref_ai_custom_key"
+            android:title="@string/ai_settings_api_key"
+            android:dialogTitle="@string/ai_settings_api_key" />
+        <EditTextPreference
+            android:key="pref_ai_custom_model"
+            android:title="@string/ai_settings_model"
+            android:dialogTitle="@string/ai_settings_model" />
+    </PreferenceCategory>
+
+</PreferenceScreen>

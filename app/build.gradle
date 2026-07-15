@@ -1,0 +1,22 @@
+apply plugin: 'com.android.application'
+
+android {
+    defaultConfig {
+        applicationId "rkr.simplekeyboard.inputmethod"
+        compileSdk 36
+        minSdkVersion 24
+        targetSdkVersion 36
+        versionCode 140
+        versionName "6.0-beta3"
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    namespace 'rkr.simplekeyboard.inputmethod'
+}
+
+dependencies {
+}
