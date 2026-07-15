@@ -605,7 +605,9 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
         // Need to set expanded touchable region only if a keyboard view is being shown.
         if (visibleKeyboardView.isShown()) {
             final int touchLeft = 0;
-            final int touchTop = mKeyboardSwitcher.isShowingMoreKeysPanel() ? 0 : visibleTopY;
+            // Always start from the very top of the input view (not just the top of the key
+            // rows) so that chrome shown above the keys, like the AI toolbar, stays touchable.
+            final int touchTop = 0;
             final int touchRight = visibleKeyboardView.getWidth();
             final int touchBottom = inputHeight
                     // Extend touchable region below the keyboard.
