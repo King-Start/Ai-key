@@ -16,18 +16,13 @@
 
 package rkr.simplekeyboard.inputmethod.latin.ai;
 
-import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
-import android.os.IBinder;
 import android.preference.PreferenceActivity;
 import android.text.TextUtils;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -40,149 +35,79 @@ import android.widget.Toast;
 import rkr.simplekeyboard.inputmethod.R;
 import rkr.simplekeyboard.inputmethod.latin.settings.AiSettingsFragment;
 import rkr.simplekeyboard.inputmethod.latin.settings.SettingsActivity;
-import rkr.simplekeyboard.inputmethod.latin.utils.DialogUtils;
 
 /**
- * Builds and drives the "type a prompt, get AI text back" dialog opened from the keyboard
- * toolbar. One instance is kept alive for the lifetime of the IME service and reused every time
- * the AI button is tapped.
+ * Drives the AI panel that expands in place above the (still visible, still usable) keys, the
+ * same way Gboard's own emoji/GIF search panel works. Deliberately NOT a separate Dialog/window:
+ * an IME showing a second window with its own focusable EditText is a known-fragile pattern, and
+ * an in-place panel inside the IME's own already-working window sidesteps that risk entirely.
+ *
+ * {@link #attach(View)} must be called every time the input view is (re)created (theme change,
+ * rotation, etc.) since it re-finds views and re-wires listeners against the fresh hierarchy.
  */
 public final class AiPanelController {
 
-    /** Lets the controller commit generated text into whatever app the keyboard is currently in. */
     public interface TextCommitter {
         void commitText(CharSequence text);
     }
 
     private final Context mContext;
     private final TextCommitter mCommitter;
-    private AlertDialog mDialog;
+
+    private View mToolbar;
+    private View mPanel;
+    private Spinner mProviderSpinner;
+    private EditText mPromptInput;
+    private ProgressBar mProgress;
+    private TextView mStatusText;
+    private Button mSendButton;
+    private View mResultGroup;
+    private TextView mResultText;
+    private AiProvider[] mProviders;
+    private boolean mBound;
 
     public AiPanelController(final Context context, final TextCommitter committer) {
         mContext = context;
         mCommitter = committer;
     }
 
-    public boolean isShowing() {
-        return mDialog != null && mDialog.isShowing();
-    }
-
-    public void dismiss() {
-        if (isShowing()) {
-            mDialog.dismiss();
+    public void attach(final View rootView) {
+        mBound = false;
+        mToolbar = rootView.findViewById(R.id.keyboard_toolbar);
+        mPanel = rootView.findViewById(R.id.ai_panel_inline);
+        if (mToolbar != null) {
+            mToolbar.setVisibility(AiPreferences.getShowToolbar(mContext) ? View.VISIBLE : View.GONE);
         }
-        mDialog = null;
-    }
+        if (mPanel == null) {
+            return;
+        }
+        mPanel.setVisibility(View.GONE);
 
-    public void show(final IBinder windowToken) {
-        if (windowToken == null || isShowing()) {
+        mProviderSpinner = mPanel.findViewById(R.id.ai_provider_spinner);
+        mPromptInput = mPanel.findViewById(R.id.ai_prompt_input);
+        mProgress = mPanel.findViewById(R.id.ai_progress);
+        mStatusText = mPanel.findViewById(R.id.ai_status_text);
+        mSendButton = mPanel.findViewById(R.id.ai_send_button);
+        mResultGroup = mPanel.findViewById(R.id.ai_result_group);
+        mResultText = mPanel.findViewById(R.id.ai_result_text);
+        final Button insertButton = mPanel.findViewById(R.id.ai_insert_button);
+        final Button copyButton = mPanel.findViewById(R.id.ai_copy_button);
+        final Button collapseButton = mPanel.findViewById(R.id.ai_panel_collapse_button);
+
+        if (mProviderSpinner == null || mPromptInput == null || mProgress == null
+                || mStatusText == null || mSendButton == null || mResultGroup == null
+                || mResultText == null || insertButton == null || copyButton == null) {
             return;
         }
 
-        final Context themedContext = DialogUtils.getPlatformDialogThemeContext(mContext);
-        final View view = LayoutInflater.from(themedContext).inflate(R.layout.ai_panel_dialog, null);
-
-        final Spinner providerSpinner = view.findViewById(R.id.ai_provider_spinner);
-        final EditText promptInput = view.findViewById(R.id.ai_prompt_input);
-        final ProgressBar progress = view.findViewById(R.id.ai_progress);
-        final TextView statusText = view.findViewById(R.id.ai_status_text);
-        final Button sendButton = view.findViewById(R.id.ai_send_button);
-        final View resultGroup = view.findViewById(R.id.ai_result_group);
-        final TextView resultText = view.findViewById(R.id.ai_result_text);
-        final Button insertButton = view.findViewById(R.id.ai_insert_button);
-        final Button copyButton = view.findViewById(R.id.ai_copy_button);
-
-        final AiProvider[] providers = AiProvider.values();
-        final String[] labels = new String[providers.length];
-        for (int i = 0; i < providers.length; i++) {
-            labels[i] = AiPreferences.displayName(mContext, providers[i]);
-        }
-        final ArrayAdapter<String> adapter = new ArrayAdapter<>(
-                themedContext, android.R.layout.simple_spinner_item, labels);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        providerSpinner.setAdapter(adapter);
-
-        final AiProvider initialProvider = AiPreferences.getSelectedProvider(mContext);
-        final int initialIndex = indexOf(providers, initialProvider);
-        providerSpinner.setSelection(initialIndex);
-
-        providerSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(final AdapterView<?> parent, final View v, final int position,
-                                        final long id) {
-                AiPreferences.setSelectedProvider(mContext, providers[position]);
-                hideStatus(statusText);
-                resultGroup.setVisibility(View.GONE);
-            }
-
-            @Override
-            public void onNothingSelected(final AdapterView<?> parent) {
-                // No-op.
-            }
-        });
-
-        sendButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(final View v) {
-                final AiProvider provider = providers[providerSpinner.getSelectedItemPosition()];
-                final String prompt = promptInput.getText().toString().trim();
-
-                if (TextUtils.isEmpty(prompt)) {
-                    showStatus(statusText, mContext.getString(R.string.ai_error_empty_prompt), null);
-                    return;
-                }
-
-                if (!AiPreferences.isConfigured(mContext, provider)) {
-                    final String providerName = AiPreferences.displayName(mContext, provider);
-                    showStatus(statusText,
-                            mContext.getString(R.string.ai_error_no_key, providerName),
-                            new View.OnClickListener() {
-                                @Override
-                                public void onClick(final View statusView) {
-                                    dismiss();
-                                    openAiSettings(mContext);
-                                }
-                            });
-                    return;
-                }
-
-                resultGroup.setVisibility(View.GONE);
-                hideStatus(statusText);
-                progress.setVisibility(View.VISIBLE);
-                sendButton.setEnabled(false);
-
-                final String endpoint = AiPreferences.getEffectiveEndpoint(mContext, provider);
-                final String apiKey = AiPreferences.getApiKey(mContext, provider);
-                final String model = AiPreferences.getModel(mContext, provider);
-
-                AiClient.send(provider, endpoint, apiKey, model, prompt, new AiClient.Callback() {
-                    @Override
-                    public void onSuccess(final String text) {
-                        progress.setVisibility(View.GONE);
-                        sendButton.setEnabled(true);
-                        if (TextUtils.isEmpty(text)) {
-                            showStatus(statusText, mContext.getString(R.string.ai_error_empty_response), null);
-                            return;
-                        }
-                        resultText.setText(text);
-                        resultGroup.setVisibility(View.VISIBLE);
-                    }
-
-                    @Override
-                    public void onError(final String message) {
-                        progress.setVisibility(View.GONE);
-                        sendButton.setEnabled(true);
-                        showStatus(statusText, mContext.getString(R.string.ai_error_generic, message), null);
-                    }
-                });
-            }
-        });
+        setUpProviderSpinner();
+        setUpSendButton();
 
         insertButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(final View v) {
-                mCommitter.commitText(resultText.getText());
-                dismiss();
+                mCommitter.commitText(mResultText.getText());
+                collapse();
             }
         });
 
@@ -192,30 +117,139 @@ public final class AiPanelController {
                 final ClipboardManager clipboard =
                         (ClipboardManager) mContext.getSystemService(Context.CLIPBOARD_SERVICE);
                 if (clipboard != null) {
-                    clipboard.setPrimaryClip(ClipData.newPlainText("AI result", resultText.getText()));
+                    clipboard.setPrimaryClip(ClipData.newPlainText("AI result", mResultText.getText()));
                     Toast.makeText(mContext, R.string.ai_copied_toast, Toast.LENGTH_SHORT).show();
                 }
             }
         });
 
-        final AlertDialog.Builder builder = new AlertDialog.Builder(themedContext);
-        builder.setTitle(R.string.ai_dialog_title);
-        builder.setView(view);
-        builder.setNegativeButton(R.string.ai_close_button, null);
+        if (collapseButton != null) {
+            collapseButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(final View v) {
+                    collapse();
+                }
+            });
+        }
 
-        final AlertDialog dialog = builder.create();
-        dialog.setCancelable(true);
-        dialog.setCanceledOnTouchOutside(true);
+        mBound = true;
+    }
 
-        final Window window = dialog.getWindow();
-        final WindowManager.LayoutParams layoutParams = window.getAttributes();
-        layoutParams.token = windowToken;
-        layoutParams.type = WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG;
-        window.setAttributes(layoutParams);
-        window.addFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM);
+    private void setUpProviderSpinner() {
+        mProviders = AiProvider.values();
+        final String[] labels = new String[mProviders.length];
+        for (int i = 0; i < mProviders.length; i++) {
+            labels[i] = AiPreferences.displayName(mContext, mProviders[i]);
+        }
+        final ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                mContext, android.R.layout.simple_spinner_item, labels);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        mProviderSpinner.setAdapter(adapter);
+        mProviderSpinner.setSelection(indexOf(mProviders, AiPreferences.getSelectedProvider(mContext)));
 
-        mDialog = dialog;
-        dialog.show();
+        mProviderSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(final AdapterView<?> parent, final View v, final int position,
+                                        final long id) {
+                AiPreferences.setSelectedProvider(mContext, mProviders[position]);
+                hideStatus();
+                mResultGroup.setVisibility(View.GONE);
+            }
+
+            @Override
+            public void onNothingSelected(final AdapterView<?> parent) {
+                // No-op.
+            }
+        });
+    }
+
+    private void setUpSendButton() {
+        mSendButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(final View v) {
+                final AiProvider provider = mProviders[mProviderSpinner.getSelectedItemPosition()];
+                final String prompt = mPromptInput.getText().toString().trim();
+
+                if (TextUtils.isEmpty(prompt)) {
+                    showStatus(mContext.getString(R.string.ai_error_empty_prompt), null);
+                    return;
+                }
+
+                if (!AiPreferences.isConfigured(mContext, provider)) {
+                    final String providerName = AiPreferences.displayName(mContext, provider);
+                    showStatus(mContext.getString(R.string.ai_error_no_key, providerName),
+                            new View.OnClickListener() {
+                                @Override
+                                public void onClick(final View statusView) {
+                                    openAiSettings(mContext);
+                                }
+                            });
+                    return;
+                }
+
+                mResultGroup.setVisibility(View.GONE);
+                hideStatus();
+                mProgress.setVisibility(View.VISIBLE);
+                mSendButton.setEnabled(false);
+
+                final String endpoint = AiPreferences.getEffectiveEndpoint(mContext, provider);
+                final String apiKey = AiPreferences.getApiKey(mContext, provider);
+                final String model = AiPreferences.getModel(mContext, provider);
+
+                AiClient.send(provider, endpoint, apiKey, model, prompt, new AiClient.Callback() {
+                    @Override
+                    public void onSuccess(final String text) {
+                        mProgress.setVisibility(View.GONE);
+                        mSendButton.setEnabled(true);
+                        if (TextUtils.isEmpty(text)) {
+                            showStatus(mContext.getString(R.string.ai_error_empty_response), null);
+                            return;
+                        }
+                        mResultText.setText(text);
+                        mResultGroup.setVisibility(View.VISIBLE);
+                    }
+
+                    @Override
+                    public void onError(final String message) {
+                        mProgress.setVisibility(View.GONE);
+                        mSendButton.setEnabled(true);
+                        showStatus(mContext.getString(R.string.ai_error_generic, message), null);
+                    }
+                });
+            }
+        });
+    }
+
+    public boolean isExpanded() {
+        return mBound && mPanel.getVisibility() == View.VISIBLE;
+    }
+
+    public void expand() {
+        if (!mBound) {
+            return;
+        }
+        if (mToolbar != null) {
+            mToolbar.setVisibility(View.GONE);
+        }
+        mPanel.setVisibility(View.VISIBLE);
+    }
+
+    public void collapse() {
+        if (!mBound) {
+            return;
+        }
+        mPanel.setVisibility(View.GONE);
+        if (mToolbar != null && AiPreferences.getShowToolbar(mContext)) {
+            mToolbar.setVisibility(View.VISIBLE);
+        }
+    }
+
+    public void toggle() {
+        if (isExpanded()) {
+            collapse();
+        } else {
+            expand();
+        }
     }
 
     public static void openAiSettings(final Context context) {
@@ -226,18 +260,17 @@ public final class AiPanelController {
         context.startActivity(intent);
     }
 
-    private static void showStatus(final TextView statusText, final String message,
-                                    final View.OnClickListener onClick) {
-        statusText.setText(message);
-        statusText.setVisibility(View.VISIBLE);
-        statusText.setOnClickListener(onClick);
-        statusText.setClickable(onClick != null);
+    private void showStatus(final String message, final View.OnClickListener onClick) {
+        mStatusText.setText(message);
+        mStatusText.setVisibility(View.VISIBLE);
+        mStatusText.setOnClickListener(onClick);
+        mStatusText.setClickable(onClick != null);
     }
 
-    private static void hideStatus(final TextView statusText) {
-        statusText.setVisibility(View.GONE);
-        statusText.setOnClickListener(null);
-        statusText.setClickable(false);
+    private void hideStatus() {
+        mStatusText.setVisibility(View.GONE);
+        mStatusText.setOnClickListener(null);
+        mStatusText.setClickable(false);
     }
 
     private static int indexOf(final AiProvider[] providers, final AiProvider target) {

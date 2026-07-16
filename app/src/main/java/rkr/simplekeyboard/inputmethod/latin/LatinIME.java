@@ -70,6 +70,7 @@ import rkr.simplekeyboard.inputmethod.latin.common.Constants;
 import rkr.simplekeyboard.inputmethod.latin.define.DebugFlags;
 import rkr.simplekeyboard.inputmethod.latin.inputlogic.InputLogic;
 import rkr.simplekeyboard.inputmethod.latin.settings.AiSettingsFragment;
+import rkr.simplekeyboard.inputmethod.latin.settings.AppearanceSettingsFragment;
 import rkr.simplekeyboard.inputmethod.latin.settings.Settings;
 import rkr.simplekeyboard.inputmethod.latin.settings.SettingsActivity;
 import rkr.simplekeyboard.inputmethod.latin.settings.SettingsValues;
@@ -350,24 +351,29 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
     }
 
     private void setupAiToolbar(final View view) {
-        final View toolbar = view.findViewById(R.id.keyboard_toolbar);
-        if (toolbar != null) {
-            toolbar.setVisibility(AiPreferences.getShowToolbar(this) ? View.VISIBLE : View.GONE);
-        }
+        mAiPanelController.attach(view);
 
         final View aiButton = view.findViewById(R.id.toolbar_ai_button);
         if (aiButton != null) {
             aiButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(final View v) {
-                    final MainKeyboardView keyboardView = mKeyboardSwitcher.getMainKeyboardView();
-                    if (keyboardView == null) {
-                        return;
-                    }
-                    final IBinder windowToken = keyboardView.getWindowToken();
-                    if (windowToken != null) {
-                        mAiPanelController.show(windowToken);
-                    }
+                    mAiPanelController.toggle();
+                }
+            });
+        }
+
+        final View resizeButton = view.findViewById(R.id.toolbar_resize_button);
+        if (resizeButton != null) {
+            resizeButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(final View v) {
+                    final Intent intent = new Intent(LatinIME.this, SettingsActivity.class);
+                    intent.putExtra(PreferenceActivity.EXTRA_SHOW_FRAGMENT,
+                            AppearanceSettingsFragment.class.getName());
+                    intent.putExtra(PreferenceActivity.EXTRA_NO_HEADERS, true);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
                 }
             });
         }
@@ -578,7 +584,7 @@ public class LatinIME extends InputMethodService implements KeyboardActionListen
             mOptionsDialog.dismiss();
             mOptionsDialog = null;
         }
-        mAiPanelController.dismiss();
+        mAiPanelController.collapse();
         super.hideWindow();
     }
 

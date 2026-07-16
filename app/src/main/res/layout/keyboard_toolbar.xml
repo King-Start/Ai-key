@@ -43,6 +43,17 @@
         android:layout_weight="1" />
 
     <ImageButton
+        android:id="@+id/toolbar_resize_button"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/ai_toolbar_resize_button"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:scaleType="centerInside"
+        android:src="@drawable/sym_keyboard_resize" />
+
+    <ImageButton
         android:id="@+id/toolbar_ai_settings_button"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"

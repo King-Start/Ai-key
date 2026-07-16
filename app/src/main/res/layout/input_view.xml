@@ -31,6 +31,8 @@
 
         <include layout="@layout/keyboard_toolbar" />
 
+        <include layout="@layout/ai_panel_inline" />
+
         <rkr.simplekeyboard.inputmethod.keyboard.MainKeyboardView
             android:id="@+id/keyboard_view"
             android:layoutDirection="ltr"

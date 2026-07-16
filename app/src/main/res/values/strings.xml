@@ -128,9 +128,11 @@
 
     <!-- AI Keyboard feature -->
     <string name="ai_toolbar_button">AI</string>
+    <string name="ai_toolbar_resize_button">Resize keyboard</string>
     <string name="ai_settings_button">AI settings</string>
     <string name="settings_screen_ai">AI Keyboard</string>
     <string name="ai_dialog_title">AI Keyboard</string>
+    <string name="ai_panel_back_button">‹ Back</string>
     <string name="ai_prompt_hint">Type your prompt or question…</string>
     <string name="ai_send_button">Send</string>
     <string name="ai_result_label">Result</string>

@@ -58,9 +58,11 @@
 
     <!-- AI Keyboard feature -->
     <string name="ai_toolbar_button">"AI"</string>
+    <string name="ai_toolbar_resize_button">"Ubah ukuran keyboard"</string>
     <string name="ai_settings_button">"Setelan AI"</string>
     <string name="settings_screen_ai">"AI Keyboard"</string>
     <string name="ai_dialog_title">"AI Keyboard"</string>
+    <string name="ai_panel_back_button">"‹ Kembali"</string>
     <string name="ai_prompt_hint">"Ketik perintah atau pertanyaan…"</string>
     <string name="ai_send_button">"Kirim"</string>
     <string name="ai_result_label">"Hasil"</string>
