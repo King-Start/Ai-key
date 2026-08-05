@@ -37,13 +37,8 @@ import rkr.simplekeyboard.inputmethod.latin.settings.AiSettingsFragment;
 import rkr.simplekeyboard.inputmethod.latin.settings.SettingsActivity;
 
 /**
- * Drives the AI panel that expands in place above the (still visible, still usable) keys, the
- * same way Gboard's own emoji/GIF search panel works. Deliberately NOT a separate Dialog/window:
- * an IME showing a second window with its own focusable EditText is a known-fragile pattern, and
- * an in-place panel inside the IME's own already-working window sidesteps that risk entirely.
- *
- * {@link #attach(View)} must be called every time the input view is (re)created (theme change,
- * rotation, etc.) since it re-finds views and re-wires listeners against the fresh hierarchy.
+ * AI panel with Gboard-like quick actions:
+ * Jawab, Perbaiki, Lanjutkan, Ringkas, Formal, Santai.
  */
 public final class AiPanelController {
 
@@ -90,9 +85,18 @@ public final class AiPanelController {
         mSendButton = mPanel.findViewById(R.id.ai_send_button);
         mResultGroup = mPanel.findViewById(R.id.ai_result_group);
         mResultText = mPanel.findViewById(R.id.ai_result_text);
+
         final Button insertButton = mPanel.findViewById(R.id.ai_insert_button);
         final Button copyButton = mPanel.findViewById(R.id.ai_copy_button);
         final Button collapseButton = mPanel.findViewById(R.id.ai_panel_collapse_button);
+
+        // Quick action buttons
+        final Button btnJawab = mPanel.findViewById(R.id.ai_btn_jawab);
+        final Button btnPerbaiki = mPanel.findViewById(R.id.ai_btn_perbaiki);
+        final Button btnLanjutkan = mPanel.findViewById(R.id.ai_btn_lanjutkan);
+        final Button btnRingkas = mPanel.findViewById(R.id.ai_btn_ringkas);
+        final Button btnFormal = mPanel.findViewById(R.id.ai_btn_formal);
+        final Button btnSantai = mPanel.findViewById(R.id.ai_btn_santai);
 
         if (mProviderSpinner == null || mPromptInput == null || mProgress == null
                 || mStatusText == null || mSendButton == null || mResultGroup == null
@@ -102,6 +106,36 @@ public final class AiPanelController {
 
         setUpProviderSpinner();
         setUpSendButton();
+
+        // Quick actions
+        if (btnJawab != null) {
+            btnJawab.setOnClickListener(v -> runQuickAction(
+                    "Jawab pertanyaan atau soal berikut dengan jelas dan lengkap:\n\n"));
+        }
+        if (btnPerbaiki != null) {
+            btnPerbaiki.setOnClickListener(v -> runQuickAction(
+                    "Perbaiki ejaan, tata bahasa, dan kejelasan teks berikut. " +
+                    "Kembalikan hanya teks yang sudah diperbaiki, tanpa penjelasan tambahan:\n\n"));
+        }
+        if (btnLanjutkan != null) {
+            btnLanjutkan.setOnClickListener(v -> runQuickAction(
+                    "Lanjutkan tulisan berikut secara natural dan koheren:\n\n"));
+        }
+        if (btnRingkas != null) {
+            btnRingkas.setOnClickListener(v -> runQuickAction(
+                    "Ringkas teks berikut agar lebih singkat dan jelas. " +
+                    "Kembalikan hanya hasil ringkasannya:\n\n"));
+        }
+        if (btnFormal != null) {
+            btnFormal.setOnClickListener(v -> runQuickAction(
+                    "Ubah teks berikut menjadi lebih formal dan sopan. " +
+                    "Kembalikan hanya teks yang sudah diubah:\n\n"));
+        }
+        if (btnSantai != null) {
+            btnSantai.setOnClickListener(v -> runQuickAction(
+                    "Ubah teks berikut menjadi lebih santai dan natural. " +
+                    "Kembalikan hanya teks yang sudah diubah:\n\n"));
+        }
 
         insertButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -133,6 +167,18 @@ public final class AiPanelController {
         }
 
         mBound = true;
+    }
+
+    /** Jalankan aksi cepat (Jawab / Perbaiki / dll). */
+    private void runQuickAction(final String prefix) {
+        final String userText = mPromptInput.getText().toString().trim();
+        if (TextUtils.isEmpty(userText)) {
+            showStatus("Ketik soal atau teks dulu di kotak atas", null);
+            return;
+        }
+        // Isi prompt dengan instruksi + teks user, lalu kirim
+        mPromptInput.setText(prefix + userText);
+        mSendButton.performClick();
     }
 
     private void setUpProviderSpinner() {
