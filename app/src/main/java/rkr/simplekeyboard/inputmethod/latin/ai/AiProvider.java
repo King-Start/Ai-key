@@ -17,12 +17,8 @@
 package rkr.simplekeyboard.inputmethod.latin.ai;
 
 /**
- * The AI backends the keyboard can send prompts to. Each provider has a stable id (used as a
- * SharedPreferences key suffix, so it must never change once shipped), a default endpoint, a
- * default model, and a request/response shape used by {@link AiClient}.
- *
- * Default model ids are set to commonly available models (updated 2026).
- * You can always change the model name in AI Settings if a provider changes their model names.
+ * The AI backends the keyboard can send prompts to.
+ * Default models updated to commonly available ones (2026).
  */
 public enum AiProvider {
     OPENAI(
@@ -56,12 +52,10 @@ public enum AiProvider {
             "",
             RequestFormat.OPENAI);
 
-    /** Shape of the request/response body, since providers don't all speak the same dialect. */
     public enum RequestFormat {
         OPENAI, GEMINI, ANTHROPIC
     }
 
-    /** Stable identifier persisted in SharedPreferences. Never change existing values. */
     public final String id;
     public final String displayName;
     public final String defaultEndpoint;
