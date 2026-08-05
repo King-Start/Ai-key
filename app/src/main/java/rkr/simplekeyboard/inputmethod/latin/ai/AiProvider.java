@@ -21,34 +21,33 @@ package rkr.simplekeyboard.inputmethod.latin.ai;
  * SharedPreferences key suffix, so it must never change once shipped), a default endpoint, a
  * default model, and a request/response shape used by {@link AiClient}.
  *
- * Default model ids are best-effort: providers change these fairly often, so every model id is
- * also exposed as an editable setting. If generation suddenly starts failing, the model name is
- * the first thing to check against the provider's docs.
+ * Default model ids are set to commonly available models (updated 2026).
+ * You can always change the model name in AI Settings if a provider changes their model names.
  */
 public enum AiProvider {
     OPENAI(
             "openai",
             "ChatGPT (OpenAI)",
             "https://api.openai.com/v1/chat/completions",
-            "gpt-5.6",
+            "gpt-4o-mini",
             RequestFormat.OPENAI),
     GEMINI(
             "gemini",
             "Gemini (Google)",
             "https://generativelanguage.googleapis.com/v1beta/models/",
-            "gemini-flash-latest",
+            "gemini-2.0-flash",
             RequestFormat.GEMINI),
     DEEPSEEK(
             "deepseek",
             "DeepSeek",
             "https://api.deepseek.com/chat/completions",
-            "deepseek-v4-flash",
+            "deepseek-chat",
             RequestFormat.OPENAI),
     ANTHROPIC(
             "anthropic",
             "Claude (Anthropic)",
             "https://api.anthropic.com/v1/messages",
-            "claude-sonnet-5",
+            "claude-3-5-sonnet-latest",
             RequestFormat.ANTHROPIC),
     CUSTOM(
             "custom",

@@ -1,0 +1,20 @@
+AI Keyboard - Fixed Version (6.0-beta3-fixed)
+
+Perubahan:
+1. Default model diperbaiki di AiProvider.java:
+   - OpenAI     → gpt-4o-mini
+   - Gemini     → gemini-2.0-flash
+   - DeepSeek   → deepseek-chat
+   - Anthropic  → claude-3-5-sonnet-latest
+
+Model sebelumnya (gpt-5.6, claude-sonnet-5, dll) tidak valid dan menyebabkan error API.
+
+Cara pakai:
+1. Build APK di Android Studio
+2. Install & aktifkan keyboard
+3. Buka AI Settings → isi API Key provider yang mau dipakai
+4. Tekan tombol AI di toolbar keyboard → ketik prompt → Send
+
+Catatan:
+- Kalau model masih error, ganti nama model di AI Settings sesuai yang tersedia di akunmu.
+- Pastikan HP punya koneksi internet.
